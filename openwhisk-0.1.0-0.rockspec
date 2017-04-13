@@ -14,7 +14,7 @@ dependencies = {
 build = {
   type = "builtin",
   modules = {
-    ["kong.plugins.openwhisk.handler"] = "./kong/plugins/openwhisk/handler.lua",
-    ["kong.plugins.openwhisk.schema"] = "./kong/plugins/openwhisk/schema.lua",
+    ["kong.plugins.openwhisk.handler"] = "kong/plugins/openwhisk/handler.lua",
+    ["kong.plugins.openwhisk.schema"]  = "kong/plugins/openwhisk/schema.lua",
   }
 }
