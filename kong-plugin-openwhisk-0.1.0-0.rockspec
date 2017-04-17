@@ -1,4 +1,4 @@
-package = "openwhisk"
+package = "kong-plugin-openwhisk"
 version = "0.1.0-0"
 source = {
   url = "git://github.com/mashape/kong-plugin-openwhisk",

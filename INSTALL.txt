@@ -26,7 +26,7 @@ You were provided with 2 archives containing the sources and documentation
 for your plugin. The first one, the `.rock` file, is a LuaRocks package. The
 second one is a regular `.tar.gz` archive which can be extracted with:
 
-    $ tar -xvf <plugin-name>-<version>.tar.gz
+    $ tar -xvf kong-plugin-<plugin-name>-<version>.tar.gz
 
 Where <plugin-name> is the name of the plugin, and <version> its version
 number.
@@ -42,7 +42,7 @@ The contents of this archive should be close to the following:
     │       └── <plugin-name>
     │           ├── handler.lua
     │           └── schema.lua
-    └── <plugin-name>-<version>.rockspec
+    └── kong-plugin-<plugin-name>-<version>.rockspec
 
 * README.md is the documentation for this plugin: it covers topics such as
   its functionalities, configuration capabilities, usage examples, etc.
@@ -50,7 +50,7 @@ The contents of this archive should be close to the following:
 * `kong/plugins/<plugin-name>` is a directory containing the Lua sources
   for this plugin. It contains at least 2 files: `handler.lua` and
   `schema.lua`.
-* `<plugin-name>-<version>.rockspec` is a file describing the Lua sources
+* `kong-plugin-<plugin-name>-<version>.rockspec` is a file describing the Lua sources
   in case you wish to install this plugin via LuaRocks, as described later.
 
 
