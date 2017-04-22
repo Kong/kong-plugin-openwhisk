@@ -124,11 +124,6 @@ function OpenWhisk:access(config)
     return responses.send_HTTP_INTERNAL_SERVER_ERROR(err)
   end
 
-  local ok, err = client:set_keepalive()
-  if not ok then
-    log("could not keepalive connection: ", err)
-  end
-
   -- prepare response for downstream
   for k, v in pairs(res.headers) do
     header[k] = v
@@ -137,6 +132,11 @@ function OpenWhisk:access(config)
   header.Server = SERVER
   ngx.status = res.status
   ngx_print(res:read_body())
+
+  local ok, err = client:set_keepalive(config.keepalive)
+  if not ok then
+    log("could not keepalive connection: ", err)
+  end
 
   return ngx_exit(res.status)
 end

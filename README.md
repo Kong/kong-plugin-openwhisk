@@ -1,7 +1,7 @@
 # Kong OpenWhisk Plugin
 
 This plugin invokes
-[OpenWhisk action](https://github.com/openwhisk/openwhisk/blob/master/docs/actions.md).
+[OpenWhisk Action](https://github.com/openwhisk/openwhisk/blob/master/docs/actions.md).
 It can be used in combination with other request plugins to secure, manage
 or extend the function.
 
@@ -22,7 +22,7 @@ or extend the function.
 ## 1. Usage
 
 This plugin will make Kong collect all the parameters from incoming requests,
-invoke the configured OpenWhisk action, and send the response to downstream.
+invoke the configured OpenWhisk Action, and send the response to downstream.
 
 [Back to TOC](#table-of-contents)
 
@@ -73,14 +73,14 @@ Attribute                                | Description
 `name`                                   | The name of the plugin to use, in this case: `openwhisk`
 `config.host`                            | Host of the OpenWhisk server.
 `config.port`<br>*optional*              | Port of the OpenWhisk server. Defaults to `443`.
-`config.path`                            | The path to `Action` resource.
+`config.path`                            | The path to the `Action` resource.
 `config.action`                          | Name of the `Action` to be invoked by the plugin.
 `config.service_token`<br>*optional*     | The service token to access Openwhisk resources.
 `config.https_verify`<br>*optional*      | Set it to true to authenticate Openwhisk server. Defaults to `false`.
 `config.https`<br>*optional*             | Use of HTTPS to connect with the OpenWhisk server. Defaults to `true`.
-`config.timeout`<br>*optional*           | Timeout in seconds before aborting a connection to OpenWhisk server. Defaults to `60 seconds`.
-`config.result`<br>*optional*            | Return only the result of the Action invoked. Defaults to `true`.
-`config.keepalive`<br>*optional*         | Defines for how long an idle connection to OpenWhisk server will live before being closed. Defaults to `60 seconds`.
+`config.timeout`<br>*optional*           | Timeout in millisecond before aborting a connection to OpenWhisk server. Defaults to `60000`.
+`config.result`<br>*optional*            | Return only the result of the `Action` invoked. Defaults to `true`.
+`config.keepalive`<br>*optional*         | Time in millisecond for which an idle connection to OpenWhisk server will live before being closed. Defaults to `60000`.
 
 Note: If `config.https_verify` is set as `true` then the server certificate
 will be verified according to the CA certificates specified by the
@@ -94,7 +94,7 @@ For this demonstration we are running Kong and
 [Openwhisk platform](https://github.com/openwhisk/openwhisk) locally on a
 Vagrant machine on a MacOS.
 
-1. Create a javascript action `hello` with the following code snippet on the
+1. Create a javascript Action `hello` with the following code snippet on the
 Openwhisk platform using [`wsk cli`](https://github.com/openwhisk/openwhisk-cli).
 
     ```javascript
@@ -137,7 +137,7 @@ Openwhisk platform using [`wsk cli`](https://github.com/openwhisk/openwhisk-cli)
 
     ```
 
-4. Make a request to invoke the action
+4. Make a request to invoke the Action
 
     **Without parameters**
 
