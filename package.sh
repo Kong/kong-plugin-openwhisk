@@ -3,7 +3,7 @@
 set -e
 
 PLUGIN=`basename "$PWD"`
-VERSION=`echo *.rockspec | sed "s/^kong-plugin-.*-\([0-9.]*.[0-9]*.[0.-9]*-[0-9]*\).rockspec/\1/"`
+VERSION=`echo *.rockspec | sed "s/^kong-plugin-.*-\([0-9.]*.[0-9]*.[0-9]*-[0-9]*\).rockspec/\1/"`
 
 #-------------------------------------------------------
 # Remove existing archive directory and create a new one

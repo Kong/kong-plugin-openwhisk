@@ -1,8 +1,8 @@
 package = "kong-plugin-openwhisk"
-version = "0.1.0-0"
+version = "0.1.1-0"
 source = {
   url = "git://github.com/mashape/kong-plugin-openwhisk",
-  tag = "0.1.0"
+  tag = "0.1.1"
 }
 description = {
   summary = "This plugin allows Kong to invoke OpenWhisk action.",
