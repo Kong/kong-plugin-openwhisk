@@ -77,9 +77,9 @@ function OpenWhisk:access(config)
   end
 
   -- get parameters
-  local body, err = retrieve_parameters()
-  if err then
-    return responses.send_HTTP_BAD_REQUEST(err)
+  local body, param_err = retrieve_parameters()
+  if param_err then
+    return responses.send_HTTP_BAD_REQUEST(param_err)
   end
 
   -- invoke action
@@ -99,14 +99,14 @@ function OpenWhisk:access(config)
   end
 
   if config.https then
-    local ok, err = client:ssl_handshake(false, config.host, config.https_verify)
+    ok, err = client:ssl_handshake(false, config.host, config.https_verify)
     if not ok then
       log("could not perform SSL handshake : ", err)
       return responses.send_HTTP_INTERNAL_SERVER_ERROR(err)
     end
   end
 
-  local res, err = client:request {
+  local res, res_err = client:request {
     method  = "POST",
     path    = concat {          config.path,
       "/actions/",              config.action,
@@ -119,9 +119,8 @@ function OpenWhisk:access(config)
       ["Authorization"] = basic_auth
     }
   }
-
-  if not res then
-    return responses.send_HTTP_INTERNAL_SERVER_ERROR(err)
+  if not res_err then
+    return responses.send_HTTP_INTERNAL_SERVER_ERROR(res_err)
   end
 
   -- prepare response for downstream
@@ -133,7 +132,7 @@ function OpenWhisk:access(config)
   ngx.status = res.status
   ngx_print(res:read_body())
 
-  local ok, err = client:set_keepalive(config.keepalive)
+  ok, err = client:set_keepalive(config.keepalive)
   if not ok then
     log("could not keepalive connection: ", err)
   end
