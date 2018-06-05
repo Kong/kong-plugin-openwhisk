@@ -1,29 +1,31 @@
 local BasePlugin    = require "kong.plugins.base_plugin"
+local singletons    = require "kong.singletons"
 local responses     = require "kong.tools.responses"
-local get_post_args = require "kong.tools.public".get_post_args
+local constants     = require "kong.constants"
+local get_post_args = require "kong.tools.public".get_body_args
 local table_merge   = require "kong.tools.utils".table_merge
 local meta          = require "kong.meta"
 local http          = require "resty.http"
 local cjson         = require "cjson.safe"
 local multipart     = require "multipart"
 
+
 local tostring      = tostring
 local concat        = table.concat
 local pairs         = pairs
 local lower         = string.lower
 local find          = string.find
+local type          = type
+local ngx           = ngx
 local encode_base64 = ngx.encode_base64
 local get_body_data = ngx.req.get_body_data
 local get_uri_args  = ngx.req.get_uri_args
 local read_body     = ngx.req.read_body
-local ngx_print     = ngx.print
-local ngx_exit      = ngx.exit
 local ngx_log       = ngx.log
-local header        = ngx.header
 local var           = ngx.var
 
 
-local SERVER        = meta._NAME .. "/" .. meta._VERSION
+local server_header = meta._SERVER_TOKENS
 
 
 local function log(...)
@@ -58,7 +60,38 @@ local function retrieve_parameters()
 end
 
 
+local function send(status, content, headers)
+  ngx.status = status
+
+  if type(headers) == "table" then
+    for k, v in pairs(headers) do
+      ngx.header[k] = v
+    end
+  end
+
+  if not ngx.header["Content-Length"] then
+    ngx.header["Content-Length"] = #content
+  end
+
+  if singletons.configuration.enabled_headers[constants.HEADERS.VIA] then
+    ngx.header[constants.HEADERS.VIA] = server_header
+  end
+
+  ngx.print(content)
+
+  return ngx.exit(status)
+end
+
+
+local function flush(ctx)
+  ctx = ctx or ngx.ctx
+  local response = ctx.delayed_response
+  return send(response.status_code, response.content, response.headers)
+end
+
+
 local OpenWhisk = BasePlugin:extend()
+
 
 OpenWhisk.PRIORITY = 1000
 
@@ -124,21 +157,29 @@ function OpenWhisk:access(config)
     return responses.send_HTTP_INTERNAL_SERVER_ERROR(err)
   end
 
-  -- prepare response for downstream
-  for k, v in pairs(res.headers) do
-    header[k] = v
-  end
+  local response_headers = res.headers
+  local response_status  = res.status
+  local response_content = res:read_body()
 
-  header.Server = SERVER
-  ngx.status = res.status
-  ngx_print(res:read_body())
-
-  local ok, err = client:set_keepalive(config.keepalive)
+  ok, err = client:set_keepalive(config.keepalive)
   if not ok then
     log("could not keepalive connection: ", err)
   end
 
-  return ngx_exit(res.status)
+  local ctx = ngx.ctx
+  if ctx.delay_response and not ctx.delayed_response then
+    ctx.delayed_response = {
+      status_code = response_status,
+      content     = response_content,
+      headers     = response_headers,
+    }
+
+    ctx.delayed_response_callback = flush
+
+    return
+  end
+
+  return send(response_status, response_content, response_headers)
 end
 
 
