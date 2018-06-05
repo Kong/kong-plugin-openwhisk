@@ -35,7 +35,9 @@ describe("Plugin: openwhisk", function()
       }
     })
 
-    assert(helpers.start_kong())
+    assert(helpers.start_kong({
+      plugins = "openwhisk"
+    }))
 
   end)
 
