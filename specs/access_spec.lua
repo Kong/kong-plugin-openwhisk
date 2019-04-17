@@ -15,17 +15,18 @@ local SERVICE_TOKEN = "openwhisk_auth_token"
 
 
 describe("Plugin: openwhisk", function()
-  local proxy
-  setup(function()
+  local proxy, bp
 
-    local api1 = assert(helpers.dao.apis:insert {
+  setup(function()
+    bp = helpers.get_db_utils(nil, nil, {"openwhisk"})
+
+    local route1 = assert(bp.routes:insert {
       name         = "test-openwhisk",
       hosts        = { "test.com" },
-      upstream_url = "http://mockbin.com",
     })
 
-    assert(helpers.dao.plugins:insert {
-      api_id = api1.id,
+    assert(bp.plugins:insert {
+      route = { id = route1.id },
       name   = "openwhisk",
       config = {
         host          = HOST,
