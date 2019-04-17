@@ -1,5 +1,4 @@
 local BasePlugin    = require "kong.plugins.base_plugin"
-local singletons    = require "kong.singletons"
 local responses     = require "kong.tools.responses"
 local constants     = require "kong.constants"
 local get_post_args = require "kong.tools.public".get_body_args
@@ -10,6 +9,7 @@ local cjson         = require "cjson.safe"
 local multipart     = require "multipart"
 
 
+local kong          = kong
 local tostring      = tostring
 local concat        = table.concat
 local pairs         = pairs
@@ -73,7 +73,7 @@ local function send(status, content, headers)
     ngx.header["Content-Length"] = #content
   end
 
-  if singletons.configuration.enabled_headers[constants.HEADERS.VIA] then
+  if kong.configuration.enabled_headers[constants.HEADERS.VIA] then
     ngx.header[constants.HEADERS.VIA] = server_header
   end
 
