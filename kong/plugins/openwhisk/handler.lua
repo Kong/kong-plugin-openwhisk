@@ -1,8 +1,5 @@
 local BasePlugin    = require "kong.plugins.base_plugin"
-local responses     = require "kong.tools.responses"
 local constants     = require "kong.constants"
-local get_post_args = require "kong.tools.public".get_body_args
-local table_merge   = require "kong.tools.utils".table_merge
 local meta          = require "kong.meta"
 local http          = require "resty.http"
 local cjson         = require "cjson.safe"
@@ -42,9 +39,7 @@ local function retrieve_parameters()
     content_type = lower(content_type)
 
     if find(content_type, "multipart/form-data", nil, true) then
-      return table_merge(
-        get_uri_args(),
-        multipart(get_body_data(), content_type):get_all())
+      return kong.table.merge(get_uri_args(), multipart(get_body_data(), content_type):get_all())
     end
 
     if find(content_type, "application/json", nil, true) then
@@ -52,11 +47,11 @@ local function retrieve_parameters()
       if err then
         return nil, err
       end
-      return table_merge(get_uri_args(), json)
+      return kong.table.merge(get_uri_args(), json)
     end
   end
 
-  return table_merge(get_uri_args(), get_post_args())
+  return kong.table.merge(get_uri_args(), kong.request.get_body())
 end
 
 
@@ -106,13 +101,13 @@ function OpenWhisk:access(config)
 
   -- only allow POST
   if var.request_method ~= "POST" then
-    return responses.send_HTTP_METHOD_NOT_ALLOWED()
+    return kong.response.exit(405, { message = "Method not allowed" })
   end
 
   -- get parameters
   local body, err = retrieve_parameters()
   if err then
-    return responses.send_HTTP_BAD_REQUEST(err)
+    return kong.response.exit(400, { message = err })
   end
 
   -- invoke action
@@ -127,15 +122,15 @@ function OpenWhisk:access(config)
 
   local ok, err = client:connect(config.host, config.port)
   if not ok then
-    log("could not connect to Openwhisk server: ", err)
-    return responses.send_HTTP_INTERNAL_SERVER_ERROR(err)
+    kong.log.err(err)
+    return kong.response.exit(500, { message = "An unexpected error happened" })
   end
 
   if config.https then
     local ok, err = client:ssl_handshake(false, config.host, config.https_verify)
     if not ok then
-      log("could not perform SSL handshake : ", err)
-      return responses.send_HTTP_INTERNAL_SERVER_ERROR(err)
+      kong.log.err(err)
+      return kong.response.exit(500, { message = "An unexpected error happened" })
     end
   end
 
@@ -154,7 +149,8 @@ function OpenWhisk:access(config)
   }
 
   if not res then
-    return responses.send_HTTP_INTERNAL_SERVER_ERROR(err)
+    kong.log.err(err)
+    return kong.response.exit(500, { message = "An unexpected error occurred" })
   end
 
   local response_headers = res.headers
