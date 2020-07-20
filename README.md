@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.com/Kong/kong-plugin-openwhisk.svg?branch=master)](https://travis-ci.com/Kong/kong-plugin-openwhisk)
+
 # Kong OpenWhisk Plugin
 
 This plugin invokes
@@ -90,7 +92,7 @@ will be verified according to the CA certificates specified by the
 
 ## 4. Demonstration
 
-For this demonstration we are running Kong and 
+For this demonstration we are running Kong and
 [Openwhisk platform](https://github.com/openwhisk/openwhisk) locally on a
 Vagrant machine on a MacOS.
 
@@ -203,9 +205,9 @@ Openwhisk platform using [`wsk cli`](https://github.com/openwhisk/openwhisk-cli)
       ```
 
     **OpenWhisk metadata in response**
-    
+
       When Kong's `config.result` is set to false, OpenWhisk's metadata will be returned in response:
-    
+
       ```bash
       $ curl -i -X POST http://localhost:8000/?name=foo -H "Host:hello.com"
       HTTP/1.1 200 OK
