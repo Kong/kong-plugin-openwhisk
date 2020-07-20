@@ -2,16 +2,48 @@ local helpers = require "spec.helpers"
 local cjson   = require "cjson"
 
 
---*****************************************************--
--- Setup to run the tests:
--- 1. Setup Openwhisk server and create a action
---    using include `action/hello.js`
--- 2. Set `config.host` and `config.service_token`
---*****************************************************--
-
-
-local HOST          = "openwhisk_host"
+local OPENWHISK_HOST = "127.0.0.1"
+local OPENWHISK_PORT = 10000
+local OPENWHISK_PATH = "/api/v1/namespaces/guest"
 local SERVICE_TOKEN = "openwhisk_auth_token"
+
+
+local fixtures = {
+  http_mock = {
+    mock_openwhisk = [=[
+      server {
+          server_name mock_openwhisk;
+          listen ]=] .. OPENWHISK_PORT .. [=[ ssl;
+
+          ssl_certificate ${{SSL_CERT}};
+          ssl_certificate_key ${{SSL_CERT_KEY}};
+          ssl_protocols TLSv1.1 TLSv1.2 TLSv1.3;
+
+          location ~ "]=] .. OPENWHISK_PATH .. [=[(.+)" {
+              content_by_lua_block {
+                local function x()
+                  ngx.req.read_body()
+                  local body = require("cjson").decode(ngx.req.get_body_data())
+
+                  local answer = [[{"payload": "Hello, %s!"}]]
+                  answer = answer:format(body.name or "World")
+                  ngx.header["Content-Type"] = "application/json"
+                  ngx.header["Content-Length"] = #answer
+                  ngx.say(answer)
+                  return ngx.exit(200)
+
+                end
+                local ok, err = pcall(x)
+                if not ok then
+                  ngx.log(ngx.ERR, "Mock error: ", err)
+                end
+              }
+          }
+      }
+    ]=]
+  },
+}
+
 
 
 describe("Plugin: openwhisk", function()
@@ -29,16 +61,18 @@ describe("Plugin: openwhisk", function()
       route = { id = route1.id },
       name   = "openwhisk",
       config = {
-        host          = HOST,
+        host          = OPENWHISK_HOST,
+        port          = OPENWHISK_PORT,
+        path          = OPENWHISK_PATH,
         service_token = SERVICE_TOKEN,
         action        = "hello",
-        path          = "/api/v1/namespaces/guest",
       }
     })
 
     assert(helpers.start_kong({
-      plugins = "openwhisk"
-    }))
+      plugins = "bundled,openwhisk",
+      nginx_conf = "spec/fixtures/custom_nginx.template",
+    }, nil, nil, fixtures))
 
   end)
 
