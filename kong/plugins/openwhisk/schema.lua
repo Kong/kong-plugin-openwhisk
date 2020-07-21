@@ -29,12 +29,16 @@ return {
             }
           },
           { environment   = {
-              type = "table",
+              type = "map",
+              keys = { type = "string" },
+              values = { abstract: true },
               default  = {}
             }
           },
           { parameters    = {
-              type = "table",
+              type = "map",
+              keys = { type = "string" },
+              values = { abstract: true },
               default  = {}
             }
           },
