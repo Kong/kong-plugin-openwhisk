@@ -29,14 +29,12 @@ return {
           { environment   = {
               type = "map",
               keys = { type = "string" },
-              values = { type = "string" },
               default  = {}
             }
           },
           { parameters    = {
               type = "map",
               keys = { type = "string" },
-              values = { type = "string" },
               default  = {}
             }
           },
