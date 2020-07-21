@@ -19,12 +19,7 @@ return {
           { result        = { type = "boolean", default  = true   } },
           { method        = { type = "string",  default  = "POST" } },
           { environment   = { type = "string",  default  = "{}"   } },
-          { kwargs        = {
-              type          = "map",
-              keys          = { type = "string" },
-              values        = { type = "string" }
-              default       = {},
-          } },
+          { kwargs        = { type = "map",     keys     = { type = "string" }, values = { type = "string" } default = {} } },
         }
       }
     }
