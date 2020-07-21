@@ -27,7 +27,7 @@ return {
             }
           },
           { environment   = {
-              type = "string",
+              type = "map",
               keys = { type = "string" },
               values = { type = "string" },
               default  = {}
