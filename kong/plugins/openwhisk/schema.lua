@@ -29,14 +29,12 @@ return {
             }
           },
           { environment   = {
-              type = "map",
-              abstract: true,
+              type = "table",
               default  = {}
             }
           },
           { parameters    = {
-              type = "map",
-              abstract: true,
+              type = "table",
               default  = {}
             }
           },
