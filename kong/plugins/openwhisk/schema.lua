@@ -19,6 +19,8 @@ return {
           { https         = { type = "boolean", default  = true   } },
           { https_verify  = { type = "boolean", default  = false  } },
           { result        = { type = "boolean", default  = true   } },
+          { environment   = { type = "string",  default  = "{}"   } },
+          { parameters    = { type = "string",  default  = "{}"   } },
           { method        = {
               type = "array",
               default  = { "POST" },
@@ -26,18 +28,6 @@ return {
                 type = "string",
                 one_of = { "HEAD", "GET", "POST", "PATCH", "PUT" }
               }
-            }
-          },
-          { environment   = {
-              type = "map",
-              abstract = true,
-              default  = {}
-            }
-          },
-          { parameters    = {
-              type = "map",
-              abstract = true,
-              default  = {}
             }
           },
         }
