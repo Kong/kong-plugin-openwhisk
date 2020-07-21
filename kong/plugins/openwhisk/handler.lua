@@ -107,10 +107,19 @@ end
 function OpenWhisk:access(config)
   OpenWhisk.super.access(self)
 
-  -- Only allow POST
-  if var.request_method ~= config.method then
+  -- Check allowed methods
+  local method_match = false
+  for i = 1, #conf.method do
+    if conf.method[i] == method then
+      method_match = true
+      break
+    end
+  end
+  if not method_match then
     return kong.response.exit(405, { message = "Method not allowed" })
   end
+
+
 
   -- Get parameters
   local body, err = retrieve_parameters()
