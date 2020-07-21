@@ -31,14 +31,14 @@ return {
           { environment   = {
               type = "map",
               keys = { type = "string" },
-              values = { type = _MAP_VALUES_TYPES },
+              values = { type = _MAP_VALUES_TYPES, default = "string" },
               default  = {}
             }
           },
           { parameters    = {
               type = "map",
               keys = { type = "string" },
-              values = { type = _MAP_VALUES_TYPES },
+              values = { type = _MAP_VALUES_TYPES, default = "string" },
               default  = {}
             }
           },
