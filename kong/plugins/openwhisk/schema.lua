@@ -17,9 +17,29 @@ return {
           { https         = { type = "boolean", default  = true   } },
           { https_verify  = { type = "boolean", default  = false  } },
           { result        = { type = "boolean", default  = true   } },
-          { method        = { type = "string",  default  = "POST" } },
-          { environment   = { type = "string",  keys     = { type = "string" }, values = { type = "string" }, default  = {} } },
-          { parameters    = { type = "map",     keys     = { type = "string" }, values = { type = "string" }, default  = {} } },
+          { method        = {
+              type = "array",
+              default  = { "POST" },
+              elements = {
+                type = "string",
+                one_of = { "HEAD", "GET", "POST", "PATCH", "PUT" }
+              }
+            }
+          },
+          { environment   = {
+              type = "string",
+              keys = { type = "string" },
+              values = { type = "string" },
+              default  = {}
+            }
+          },
+          { parameters    = {
+              type = "map",
+              keys = { type = "string" },
+              values = { type = "string" },
+              default  = {}
+            }
+          },
         }
       }
     }
