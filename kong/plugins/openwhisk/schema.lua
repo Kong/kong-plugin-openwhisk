@@ -18,8 +18,8 @@ return {
           { https_verify  = { type = "boolean", default  = false  } },
           { result        = { type = "boolean", default  = true   } },
           { method        = { type = "string",  default  = "POST" } },
-          { environment   = { type = "string",  default  = "{}"   } },
-          { kwargs        = { type = "map",     keys     = { type = "string" }, values = { type = "string" }, default = {} } },
+          { environment   = { type = "map",     default  = {}     } },
+          { parameters    = { type = "map",     keys     = {}     } },
         }
       }
     }

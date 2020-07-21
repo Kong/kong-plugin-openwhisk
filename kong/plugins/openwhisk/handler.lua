@@ -119,10 +119,10 @@ function OpenWhisk:access(config)
   end
 
   -- Append environment data
-  body['environment'] = config.environment
+  body['_environment'] = config.environment
 
   -- Append extra data for the request
-  body['kwargs'] = config.kwargs
+  body['_parameters'] = config.parameters
 
   -- Get x-auth-token
   local authorization_header = get_headers()["x-auth-token"]
