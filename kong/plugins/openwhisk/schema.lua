@@ -19,6 +19,7 @@ return {
           { result        = { type = "boolean", default  = true   } },
           { method        = { type = "string",  default  = "POST" } },
           { environment   = { type = "string",  default  = "{}"   } },
+          { kwargs        = { type = "table",   default  = {}     } },
         }
       }
     }

@@ -17,9 +17,11 @@ local ngx           = ngx
 local encode_base64 = ngx.encode_base64
 local get_body_data = ngx.req.get_body_data
 local get_uri_args  = ngx.req.get_uri_args
+local get_headers   = ngx.req.get_headers
 local read_body     = ngx.req.read_body
 local ngx_log       = ngx.log
 local var           = ngx.var
+local header        = ngx.header
 
 
 local server_header = meta._SERVER_TOKENS
@@ -117,7 +119,10 @@ function OpenWhisk:access(config)
   end
 
   -- Append environment data
-  body['_environment_data'] = config.environment
+  body['environment'] = config.environment
+
+  -- Append extra data for the request
+  body['kwargs'] = config.kwargs
 
   -- Get x-auth-token
   local authorization_header = get_headers()["x-auth-token"]
@@ -182,9 +187,9 @@ function OpenWhisk:access(config)
 
   -- Prepare response for downstream
   for key, value in pairs(res.headers) do
-    headers[key] = value
+    header[key] = value
   end
-  headers.Server = SERVER
+  header.Server = SERVER
 
   local ctx = ngx.ctx
   if ctx.delay_response and not ctx.delayed_response then
@@ -199,7 +204,7 @@ function OpenWhisk:access(config)
     return
   end
 
-  return send(response_status, response_content, headers)
+  return send(response_status, response_content, header)
 end
 
 
