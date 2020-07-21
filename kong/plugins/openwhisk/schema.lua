@@ -30,15 +30,13 @@ return {
           },
           { environment   = {
               type = "map",
-              keys = { type = "string" },
-              values = { abstract = true },
+              abstract = true,
               default  = {}
             }
           },
           { parameters    = {
               type = "map",
-              keys = { type = "string" },
-              values = { abstract = true },
+              abstract = true,
               default  = {}
             }
           },
