@@ -1,5 +1,7 @@
 local typedefs = require "kong.db.schema.typedefs"
 
+local _MAP_VALUES_TYPES = { "boolean", "set", "array", "string", "integer", "number", "map" }
+
 return {
   name = "openwhisk",
   fields = {
@@ -29,14 +31,14 @@ return {
           { environment   = {
               type = "map",
               keys = { type = "string" },
-              values = { type = "object" },
+              values = { type = _MAP_VALUES_TYPES },
               default  = {}
             }
           },
           { parameters    = {
               type = "map",
               keys = { type = "string" },
-              values = { type = "object" },
+              values = { type = _MAP_VALUES_TYPES },
               default  = {}
             }
           },
