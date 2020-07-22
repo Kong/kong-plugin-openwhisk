@@ -21,7 +21,7 @@ return {
           { result        = { type = "boolean", default  = true   } },
           { environment   = { type = "string",  default  = "{}"   } },
           { parameters    = { type = "string",  default  = "{}"   } },
-          { method        = {
+          { methods        = {
               type = "array",
               default  = { "POST" },
               elements = {

@@ -108,9 +108,10 @@ function OpenWhisk:access(config)
   OpenWhisk.super.access(self)
 
   -- Check allowed methods
+  local method = kong.request.get_method()
   local method_match = false
-  for i = 1, #conf.method do
-    if conf.method[i] == method then
+  for i = 1, #config.methods do
+    if config.methods[i] == method then
       method_match = true
       break
     end
