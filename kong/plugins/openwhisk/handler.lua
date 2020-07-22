@@ -117,15 +117,13 @@ function OpenWhisk:access(config)
     end
   end
   if not method_match then
-    return kong.response.exit(405, { message = "Method not allowed" })
+    return kong.response.exit(405, { code = 405001, message = "The HTTP method used is not allowed in this endpoint." })
   end
-
-
 
   -- Get parameters
   local body, err = retrieve_parameters()
   if err then
-    return kong.response.exit(400, { message = err })
+    return kong.response.exit(400, { code = 400002, message = "Validation error", detail = { body = err } })
   end
 
   -- Append environment data
@@ -156,14 +154,14 @@ function OpenWhisk:access(config)
   local ok, err = client:connect(config.host, config.port)
   if not ok then
     kong.log.err(err)
-    return kong.response.exit(500, { message = "An unexpected error happened" })
+    return kong.response.exit(503, { code = 503001, message = "It's not you, it's us, our service is down." })
   end
 
   if config.https then
     local ok, err = client:ssl_handshake(false, config.host, config.https_verify)
     if not ok then
       kong.log.err(err)
-      return kong.response.exit(500, { message = "An unexpected error happened" })
+      return kong.response.exit(501, { code = 500001, message = "It's not you, it's us, we have experienced a error on our side." })
     end
   end
 
@@ -184,7 +182,7 @@ function OpenWhisk:access(config)
 
   if not res then
     kong.log.err(err)
-    return kong.response.exit(500, { message = "An unexpected error occurred" })
+    return kong.response.exit(501, { code = 500001, message = "It's not you, it's us, we have experienced a error on our side." })
   end
 
   local response_status  = res.status
