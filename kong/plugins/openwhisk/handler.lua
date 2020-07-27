@@ -17,13 +17,15 @@ local ngx           = ngx
 local encode_base64 = ngx.encode_base64
 local get_body_data = ngx.req.get_body_data
 local get_uri_args  = ngx.req.get_uri_args
+local get_headers   = ngx.req.get_headers
 local read_body     = ngx.req.read_body
 local ngx_log       = ngx.log
 local var           = ngx.var
+local header        = ngx.header
 
 
 local server_header = meta._SERVER_TOKENS
-
+local SERVER        = meta._NAME .. "/" .. meta._VERSION
 
 local function log(...)
   ngx_log(ngx.ERR, "[openwhisk] ", ...)
@@ -38,8 +40,10 @@ local function retrieve_parameters()
   if content_type then
     content_type = lower(content_type)
 
-    if find(content_type, "multipart/form-data", nil, true) then
-      return kong.table.merge(get_uri_args(), multipart(get_body_data(), content_type):get_all())
+    if find(content_type, "multipart/form-data", nil, true) or var.request_method == "GET" then
+      return kong.table.merge(
+        get_uri_args(),
+        multipart(get_body_data(), content_type):get_all())
     end
 
     if find(content_type, "application/json", nil, true) then
@@ -49,6 +53,10 @@ local function retrieve_parameters()
       end
       return kong.table.merge(get_uri_args(), json)
     end
+  end
+
+  if var.request_method == "GET" then
+    return get_uri_args()
   end
 
   return kong.table.merge(get_uri_args(), kong.request.get_body())
@@ -99,22 +107,45 @@ end
 function OpenWhisk:access(config)
   OpenWhisk.super.access(self)
 
-  -- only allow POST
-  if var.request_method ~= "POST" then
-    return kong.response.exit(405, { message = "Method not allowed" })
+  -- Check allowed methods
+  local method = kong.request.get_method()
+  local method_match = false
+  for i = 1, #config.methods do
+    if config.methods[i] == method then
+      method_match = true
+      break
+    end
+  end
+  if not method_match then
+    return kong.response.exit(405, { code = 405001, message = "The HTTP method used is not allowed in this endpoint." })
   end
 
-  -- get parameters
+  -- Get parameters
   local body, err = retrieve_parameters()
   if err then
-    return kong.response.exit(400, { message = err })
+    return kong.response.exit(400, { code = 400002, message = "Validation error", detail = { body = err } })
   end
 
-  -- invoke action
+  -- Append environment data
+  body['_environment'] = config.environment
+
+  -- Append extra data for the request
+  body['_parameters'] = config.parameters
+
+  -- Get x-auth-token
+  local authorization_header = get_headers()["x-auth-token"]
+  if authorization_header then
+    body['token'] = authorization_header
+  end
+
+  -- Invoke action
   local basic_auth
   if config.service_token ~= nil then
     basic_auth = "Basic " .. encode_base64(config.service_token)
   end
+
+  -- Blocking
+  local blocking = (body['_blocking'] == nil)
 
   local client = http.new()
 
@@ -123,14 +154,14 @@ function OpenWhisk:access(config)
   local ok, err = client:connect(config.host, config.port)
   if not ok then
     kong.log.err(err)
-    return kong.response.exit(500, { message = "An unexpected error happened" })
+    return kong.response.exit(503, { code = 503001, message = "It's not you, it's us, our service is down." })
   end
 
   if config.https then
     local ok, err = client:ssl_handshake(false, config.host, config.https_verify)
     if not ok then
       kong.log.err(err)
-      return kong.response.exit(500, { message = "An unexpected error happened" })
+      return kong.response.exit(501, { code = 500001, message = "It's not you, it's us, we have experienced a error on our side." })
     end
   end
 
@@ -138,7 +169,8 @@ function OpenWhisk:access(config)
     method  = "POST",
     path    = concat {          config.path,
       "/actions/",              config.action,
-      "?blocking=true&result=", tostring(config.result),
+      "?blocking=",             tostring(blocking),
+      "&result=",               tostring(config.result),
       "&timeout=",              config.timeout
     },
     body    = cjson.encode(body),
@@ -150,10 +182,9 @@ function OpenWhisk:access(config)
 
   if not res then
     kong.log.err(err)
-    return kong.response.exit(500, { message = "An unexpected error occurred" })
+    return kong.response.exit(501, { code = 500001, message = "It's not you, it's us, we have experienced a error on our side." })
   end
 
-  local response_headers = res.headers
   local response_status  = res.status
   local response_content = res:read_body()
 
@@ -162,12 +193,18 @@ function OpenWhisk:access(config)
     log("could not keepalive connection: ", err)
   end
 
+  -- Prepare response for downstream
+  for key, value in pairs(res.headers) do
+    header[key] = value
+  end
+  header.Server = SERVER
+
   local ctx = ngx.ctx
   if ctx.delay_response and not ctx.delayed_response then
     ctx.delayed_response = {
       status_code = response_status,
       content     = response_content,
-      headers     = response_headers,
+      headers     = header,
     }
 
     ctx.delayed_response_callback = flush
@@ -175,7 +212,7 @@ function OpenWhisk:access(config)
     return
   end
 
-  return send(response_status, response_content, response_headers)
+  return send(response_status, response_content, header)
 end
 
 

@@ -1,5 +1,7 @@
 local typedefs = require "kong.db.schema.typedefs"
 
+local _MAP_VALUES_TYPES = { "boolean", "set", "array", "string", "integer", "number", "map" }
+
 return {
   name = "openwhisk",
   fields = {
@@ -17,6 +19,17 @@ return {
           { https         = { type = "boolean", default  = true   } },
           { https_verify  = { type = "boolean", default  = false  } },
           { result        = { type = "boolean", default  = true   } },
+          { environment   = { type = "string",  default  = "{}"   } },
+          { parameters    = { type = "string",  default  = "{}"   } },
+          { methods        = {
+              type = "array",
+              default  = { "POST" },
+              elements = {
+                type = "string",
+                one_of = { "HEAD", "GET", "POST", "PATCH", "PUT" }
+              }
+            }
+          },
         }
       }
     }
