@@ -98,6 +98,58 @@ local OpenWhisk = BasePlugin:extend()
 
 OpenWhisk.PRIORITY = 1000
 
+-- create a table with characters that would be omitted from allowed origins expression
+local escaped_chars = {}
+escaped_chars["."] = "%."
+escaped_chars["*"] = ".+"
+-- add a fallback option for unknown char
+setmetatable(escaped_chars, {
+  __index = function(table, key)
+    return key
+  end
+  }
+)
+
+local function is_allowed_origin(origin, allowed_origins)
+  -- if the route does not have allowed origins configured it's not necessary to validate it
+  if #allowed_origins == 0 then
+    return true
+  end
+
+  -- if the request does not have an Origin header configured, reject the request
+  if origin == nil then
+    return false
+  end
+
+  -- if the request has an Origin header and the route has "allowed_origins" configured, check the origin
+  local is_origin_valid = false
+  for index = 1, #allowed_origins do
+    -- format the allowed origin like a regular expression for checking that the origin matches with it
+    local expression = "^"
+    for i = 1, #allowed_origins[index] do
+      local char_index = allowed_origins[index]:sub(i,i)
+      local scaped_char = escaped_chars[char_index]
+      expression = expression .. scaped_char
+    end
+
+    -- if * (.+) exists in allowed origins, the origin will be valid
+    if expression == ".+" then
+      is_origin_valid = true
+      break
+    end
+
+    -- remove the protocol from origin value
+    origin = origin:gsub("https?://", "")
+    -- if the matched value is not nil, the origin will be valid
+    if string.match(origin, expression) ~=  nil then
+      is_origin_valid = true
+      break
+    end
+  end
+
+  return is_origin_valid
+end
+
 
 function OpenWhisk:new()
   OpenWhisk.super.new(self, "openwhisk")
@@ -118,6 +170,12 @@ function OpenWhisk:access(config)
   end
   if not method_match then
     return kong.response.exit(405, { code = 405001, message = "The HTTP method used is not allowed in this endpoint." })
+  end
+
+  -- check allowed origin
+  local origin = kong.request.get_header("origin")
+  if not is_allowed_origin(origin, config.allowed_origins) then
+    return kong.response.exit(405, { code = 403001, message = "You do not have enough permissions to perform this action." })
   end
 
   -- Get parameters
