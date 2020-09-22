@@ -185,10 +185,14 @@ function OpenWhisk:access(config)
   end
 
   -- Append environment data
-  -- body['_environment'] = config.environment
+  if config.environment ~= nil then
+    body['_environment'] = config.environment
+  end
 
   -- Append extra data for the request
-  -- body['_parameters'] = config.parameters
+  if config.parameters ~= nil then
+    body['_parameters'] = config.parameters
+  end
 
   -- Get x-auth-token
   local authorization_header = get_headers()["x-auth-token"]
