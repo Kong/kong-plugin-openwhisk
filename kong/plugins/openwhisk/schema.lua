@@ -16,6 +16,7 @@ return {
           { action          = { type = "string",  required = true   } },
           { https           = { type = "boolean", default  = true   } },
           { https_verify    = { type = "boolean", default  = false  } },
+          { raw_function    = { type = "boolean", default  = false  } },
           { result          = { type = "boolean", default  = true   } },
           { environment     = { type = "string",  default  = "{}"   } },
           { parameters      = { type = "string",  default  = "{}"   } },
