@@ -202,7 +202,7 @@ function OpenWhisk:access(config)
   if true then
     body['headers'] = get_headers()
     body['body'] = get_request_body()
-    body['path'] = kong.request.get_path()
+    body['path'] = kong.request.get_path_with_query()
   end
 
   -- Get x-auth-token

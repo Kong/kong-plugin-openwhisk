@@ -17,6 +17,7 @@ return {
           { https           = { type = "boolean", default  = true   } },
           { https_verify    = { type = "boolean", default  = false  } },
           { result          = { type = "boolean", default  = true   } },
+          { raw_function    = { type = "boolean", default  = false  } },
           { environment     = { type = "string",  default  = "{}"   } },
           { parameters      = { type = "string",  default  = "{}"   } },
           { methods         = {
