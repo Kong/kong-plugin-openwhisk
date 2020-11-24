@@ -184,7 +184,12 @@ function OpenWhisk:access(config)
   end
 
   -- Get parameters
-  local body, err = retrieve_parameters()
+  local body, err
+  if config.raw_function then
+    body = {}
+  else
+    body, err = retrieve_parameters()
+  end
   if err then
     return kong.response.exit(400, { code = 400002, message = "Validation error", detail = { body = err } })
   end
@@ -199,7 +204,7 @@ function OpenWhisk:access(config)
     body['_parameters'] = config.parameters
   end
 
-  if true then
+  if config.raw_function then
     body['headers'] = get_headers()
     body['body'] = get_request_body()
     body['path'] = kong.request.get_path_with_query()
@@ -207,7 +212,7 @@ function OpenWhisk:access(config)
 
   -- Get x-auth-token
   local authorization_header = get_headers()["x-auth-token"]
-  if authorization_header then
+  if authorization_header and not config.raw_function then
     body['token'] = authorization_header
   end
   -- Invoke action
