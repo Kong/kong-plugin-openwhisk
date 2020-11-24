@@ -199,7 +199,7 @@ function OpenWhisk:access(config)
     body['_parameters'] = config.parameters
   end
 
-  if config.raw_function == true then
+  if true then
     body['headers'] = get_headers()
     body['body'] = get_request_body()
     body['path'] = kong.request.get_path()
