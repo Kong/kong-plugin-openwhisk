@@ -66,6 +66,7 @@ describe("Plugin: openwhisk", function()
         path          = OPENWHISK_PATH,
         service_token = SERVICE_TOKEN,
         action        = "hello",
+        methods       = { "POST", "GET" },
       }
     })
 
@@ -164,10 +165,9 @@ describe("Plugin: openwhisk", function()
           ["Content-Type"] = "application/json"
         }
       })
-      local body = assert.res_status(405, res)
+      local body = assert.res_status(200, res)
       local json = cjson.decode(body)
-      assert.equal("The HTTP method used is not allowed in this endpoint.", json.message)
-      assert.equal(405001, json.code)
+      assert.equal("Hello, World!", json.payload)
     end)
 
     it("should not allow DELETE", function()

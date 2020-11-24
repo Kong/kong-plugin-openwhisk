@@ -32,6 +32,11 @@ local function log(...)
 end
 
 
+local function get_request_body()
+  read_body()
+  return get_body_data()
+end
+
 local function retrieve_parameters()
   read_body()
 
@@ -194,12 +199,17 @@ function OpenWhisk:access(config)
     body['_parameters'] = config.parameters
   end
 
+  if config.raw_function == true then
+    body['headers'] = get_headers()
+    body['body'] = get_request_body()
+    body['path'] = kong.request.get_path()
+  end
+
   -- Get x-auth-token
   local authorization_header = get_headers()["x-auth-token"]
   if authorization_header then
     body['token'] = authorization_header
   end
-
   -- Invoke action
   local basic_auth
   if config.service_token ~= nil then
@@ -273,7 +283,6 @@ function OpenWhisk:access(config)
 
     return
   end
-
   return send(response_status, response_content, header)
 end
 
