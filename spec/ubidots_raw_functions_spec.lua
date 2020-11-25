@@ -30,19 +30,16 @@ local fixtures = {
                   local content_length = body.headers["content-length"]
                   local auth_token = body.headers["x-auth-token"]
                   local extra_header = body.headers["extra-header"]
-                  local request_body = body.body
-                  if request_body ~= nil then
-                    request_body = "test"
-                  end
                   local answer = [[{ 
                     "status_code": 202,
                     "body": "{\"payload\": \"Hello, World!\", \"path\": \"%s\", 
                     \"content_type\": \"%s\", \"user_agent\": \"%s\", \"content_length\": \"%s\", 
                     \"auth_token\": \"%s\", \"extra_header\": \"%s\"}",
-                    "headers": {"x": "v1", "y": "v2", "Content-type": "application/csv", "test": "%s"}}]]
+                    "headers": {"x": "v1", "y": "v2", "Content-type": "application/csv"}}]]
                   answer = answer:format(body.path, content_type, user_agent, content_length, 
-                  auth_token, extra_header, request_body)
+                  auth_token, extra_header)
                   ngx.header["Content-Type"] = "application/json"
+                  ngx.header["request-body"] = body.body
                   ngx.header["Content-Length"] = #answer
                   ngx.print(answer)
                   return ngx.exit(200)
@@ -129,8 +126,9 @@ describe("Plugin: openwhisk", function()
       assert.equal(headers["Via"], "kong/2.0.4")
       assert.equal(headers["x"], "v1")
       assert.equal(headers["y"], "v2")
+      assert.equal(headers["request-body"], '{"test":"bar"}')
       assert.equal(headers["content-type"], "application/csv")
-      ---assert.equal(headers["content-length"], "291")
+      assert.equal(headers["content-length"], "291")
       assert.equal(res.status, 202)
       assert.equal("application/json", json.content_type)
       assert.equal("lua-resty-http/0.14 (Lua) ngx_lua/10015", json.user_agent)

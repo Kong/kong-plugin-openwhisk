@@ -268,7 +268,9 @@ function OpenWhisk:access(config)
       response_status = response_json.status_code
     end
     if response_json.headers ~= nil then
-      header = response_json.headers
+      for key, value in pairs(response_json.headers) do
+          header[key] = value
+      end
     end
     if response_json.body ~= nil then
       response_content = response_json.body
