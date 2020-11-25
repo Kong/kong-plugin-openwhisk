@@ -5,7 +5,6 @@ local http          = require "resty.http"
 local cjson         = require "cjson.safe"
 local multipart     = require "multipart"
 
-
 local kong          = kong
 local tostring      = tostring
 local concat        = table.concat
@@ -69,25 +68,13 @@ end
 
 
 local function send(status, content, headers)
-  ngx.status = status
-
-  if type(headers) == "table" then
-    for k, v in pairs(headers) do
-      ngx.header[k] = v
-    end
+  if not headers["Content-Length"] then
+    headers["Content-Length"] = #content
   end
-
-  if not ngx.header["Content-Length"] then
-    ngx.header["Content-Length"] = #content
-  end
-
   if kong.configuration.enabled_headers[constants.HEADERS.VIA] then
-    ngx.header[constants.HEADERS.VIA] = server_header
+    headers[constants.HEADERS.VIA] = server_header
   end
-
-  ngx.print(content)
-
-  return ngx.exit(status)
+  return kong.response.exit(status, content, headers)
 end
 
 
@@ -275,7 +262,18 @@ function OpenWhisk:access(config)
     header[key] = value
   end
   header.Server = SERVER
-
+  if config.raw_function then
+    local response_json = cjson.decode(response_content)
+    if response_json.status_code ~= nil then
+      response_status = response_json.status_code
+    end
+    if response_json.headers ~= nil then
+      header = response_json.headers
+    end
+    if response_json.body ~= nil then
+      response_content = response_json.body
+    end
+  end
   local ctx = ngx.ctx
   if ctx.delay_response and not ctx.delayed_response then
     ctx.delayed_response = {
