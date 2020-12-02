@@ -5,7 +5,6 @@ local http          = require "resty.http"
 local cjson         = require "cjson.safe"
 local multipart     = require "multipart"
 
-
 local kong          = kong
 local tostring      = tostring
 local concat        = table.concat
@@ -31,6 +30,11 @@ local function log(...)
   ngx_log(ngx.ERR, "[openwhisk] ", ...)
 end
 
+
+local function get_request_body()
+  read_body()
+  return get_body_data()
+end
 
 local function retrieve_parameters()
   read_body()
@@ -64,25 +68,13 @@ end
 
 
 local function send(status, content, headers)
-  ngx.status = status
-
-  if type(headers) == "table" then
-    for k, v in pairs(headers) do
-      ngx.header[k] = v
-    end
+  if not headers["Content-Length"] then
+    headers["Content-Length"] = #content
   end
-
-  if not ngx.header["Content-Length"] then
-    ngx.header["Content-Length"] = #content
-  end
-
   if kong.configuration.enabled_headers[constants.HEADERS.VIA] then
-    ngx.header[constants.HEADERS.VIA] = server_header
+    headers[constants.HEADERS.VIA] = server_header
   end
-
-  ngx.print(content)
-
-  return ngx.exit(status)
+  return kong.response.exit(status, content, headers)
 end
 
 
@@ -179,7 +171,12 @@ function OpenWhisk:access(config)
   end
 
   -- Get parameters
-  local body, err = retrieve_parameters()
+  local body, err
+  if config.raw_function then
+    body = {}
+  else
+    body, err = retrieve_parameters()
+  end
   if err then
     return kong.response.exit(400, { code = 400002, message = "Validation error", detail = { body = err } })
   end
@@ -194,12 +191,17 @@ function OpenWhisk:access(config)
     body['_parameters'] = config.parameters
   end
 
-  -- Get x-auth-token
-  local authorization_header = get_headers()["x-auth-token"]
-  if authorization_header then
-    body['token'] = authorization_header
+  if config.raw_function then
+    body['headers'] = get_headers()
+    body['body'] = get_request_body()
+    body['path'] = kong.request.get_path_with_query()
   end
 
+  -- Get x-auth-token
+  local authorization_header = get_headers()["x-auth-token"]
+  if authorization_header and not config.raw_function then
+    body['token'] = authorization_header
+  end
   -- Invoke action
   local basic_auth
   if config.service_token ~= nil then
@@ -260,7 +262,20 @@ function OpenWhisk:access(config)
     header[key] = value
   end
   header.Server = SERVER
-
+  if config.raw_function then
+    local response_json = cjson.decode(response_content)
+    if response_json.status_code ~= nil then
+      response_status = response_json.status_code
+    end
+    if response_json.headers ~= nil then
+      for key, value in pairs(response_json.headers) do
+          header[key] = value
+      end
+    end
+    if response_json.body ~= nil then
+      response_content = response_json.body
+    end
+  end
   local ctx = ngx.ctx
   if ctx.delay_response and not ctx.delayed_response then
     ctx.delayed_response = {
@@ -273,7 +288,6 @@ function OpenWhisk:access(config)
 
     return
   end
-
   return send(response_status, response_content, header)
 end
 

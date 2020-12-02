@@ -23,13 +23,25 @@ local fixtures = {
               content_by_lua_block {
                 local function x()
                   ngx.req.read_body()
-                  local body = require("cjson").decode(ngx.req.get_body_data())
-
-                  local answer = [[{"payload": "Hello, %s!"}]]
-                  answer = answer:format(body.name or "World")
+                  local cjson = require("cjson")
+                  local body = cjson.decode(ngx.req.get_body_data())
+                  local content_type = body.headers["content-type"]
+                  local user_agent = body.headers["user-agent"]
+                  local content_length = body.headers["content-length"]
+                  local auth_token = body.headers["x-auth-token"]
+                  local extra_header = body.headers["extra-header"]
+                  local answer = [[{ 
+                    "status_code": 202,
+                    "body": "{\"payload\": \"Hello, World!\", \"path\": \"%s\", 
+                    \"content_type\": \"%s\", \"user_agent\": \"%s\", \"content_length\": \"%s\", 
+                    \"auth_token\": \"%s\", \"extra_header\": \"%s\"}",
+                    "headers": {"x": "v1", "y": "v2", "Content-type": "application/csv"}}]]
+                  answer = answer:format(body.path, content_type, user_agent, content_length, 
+                  auth_token, extra_header)
                   ngx.header["Content-Type"] = "application/json"
+                  ngx.header["request-body"] = body.body
                   ngx.header["Content-Length"] = #answer
-                  ngx.say(answer)
+                  ngx.print(answer)
                   return ngx.exit(200)
 
                 end
@@ -66,6 +78,8 @@ describe("Plugin: openwhisk", function()
         path          = OPENWHISK_PATH,
         service_token = SERVICE_TOKEN,
         action        = "hello",
+        methods       = { "POST", "GET" },
+        raw_function  = true,
       }
     })
 
@@ -93,15 +107,35 @@ describe("Plugin: openwhisk", function()
     it("should allow POST", function()
       local res = assert(proxy:send {
         method  = "POST",
-        path    = "/",
-        body    = {},
+        path    = "/prv/test/test1/extra?name=foo",
+        body    = {
+          test = "bar"
+        },
         headers = {
-          ["Host"] = "test.com"
+          ["Host"] = "test.com",
+          ["Content-Type"] = "application/json",
+          ["x-auth-token"] = "x_auth_token",
+          ["extra-header"] = "extra_header",
         }
       })
 
-      local body = assert.res_status(200, res)
+      local body = assert.res_status(202, res)
       local json = cjson.decode(body)
+      local headers = res.headers
+      assert.equal(headers["Server"], "kong/2.0.4")
+      assert.equal(headers["Via"], "kong/2.0.4")
+      assert.equal(headers["x"], "v1")
+      assert.equal(headers["y"], "v2")
+      assert.equal(headers["request-body"], '{"test":"bar"}')
+      assert.equal(headers["content-type"], "application/csv")
+      assert.equal(headers["content-length"], "291")
+      assert.equal(res.status, 202)
+      assert.equal("application/json", json.content_type)
+      assert.equal("lua-resty-http/0.14 (Lua) ngx_lua/10015", json.user_agent)
+      assert.equal("14", json.content_length)
+      assert.equal("x_auth_token", json.auth_token)
+      assert.equal("extra_header", json.extra_header)
+      assert.equal("/prv/test/test1/extra?name=foo", json.path)
       assert.equal("Hello, World!", json.payload)
     end)
 
@@ -115,9 +149,9 @@ describe("Plugin: openwhisk", function()
         }
       })
 
-      local body = assert.res_status(200, res)
+      local body = assert.res_status(202, res)
       local json = cjson.decode(body)
-      assert.equal("Hello, foo!", json.payload)
+      assert.equal("Hello, World!", json.payload)
     end)
 
     it("should allow POST with json body", function()
@@ -131,9 +165,9 @@ describe("Plugin: openwhisk", function()
         }
       })
 
-      local body = assert.res_status(200, res)
+      local body = assert.res_status(202, res)
       local json = cjson.decode(body)
-      assert.equal("Hello, foo!", json.payload)
+      assert.equal("Hello, World!", json.payload)
     end)
 
     it("should allow POST with form-encoded body", function()
@@ -149,9 +183,9 @@ describe("Plugin: openwhisk", function()
         },
 
       })
-      local body = assert.res_status(200, res)
+      local body = assert.res_status(202, res)
       local json = cjson.decode(body)
-      assert.equal("Hello, foo!", json.payload)
+      assert.equal("Hello, World!", json.payload)
     end)
 
     it("should not allow GET", function()
@@ -164,10 +198,9 @@ describe("Plugin: openwhisk", function()
           ["Content-Type"] = "application/json"
         }
       })
-      local body = assert.res_status(405, res)
+      local body = assert.res_status(202, res)
       local json = cjson.decode(body)
-      assert.equal("The HTTP method used is not allowed in this endpoint.", json.message)
-      assert.equal(405001, json.code)
+      assert.equal("Hello, World!", json.payload)
     end)
 
     it("should not allow DELETE", function()
