@@ -258,8 +258,10 @@ function OpenWhisk:access(config)
   end
 
   -- Prepare response for downstream
-  for key, value in pairs(res.headers) do
-    header[key] = value
+  if not config.raw_function then
+    for key, value in pairs(res.headers) do
+      header[key] = value
+    end
   end
   header.Server = SERVER
   if config.raw_function then
