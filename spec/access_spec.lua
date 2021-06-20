@@ -15,8 +15,15 @@ local fixtures = {
           server_name mock_openwhisk;
           listen ]=] .. OPENWHISK_PORT .. [=[ ssl;
 
+> if ssl_cert[1] then
+> for i = 1, #ssl_cert do
+          ssl_certificate     $(ssl_cert[i]);
+          ssl_certificate_key $(ssl_cert_key[i]);
+> end
+> else
           ssl_certificate ${{SSL_CERT}};
           ssl_certificate_key ${{SSL_CERT_KEY}};
+> end
           ssl_protocols TLSv1.1 TLSv1.2 TLSv1.3;
 
           location ~ "]=] .. OPENWHISK_PATH .. [=[(.+)" {
