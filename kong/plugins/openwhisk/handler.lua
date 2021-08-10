@@ -228,7 +228,7 @@ function OpenWhisk:access(config)
       return kong.response.exit(501, { code = 500001, message = "It's not you, it's us, we have experienced a error on our side." })
     end
   end
-
+  body["_blocking"] = nil
   local res, err = client:request {
     method  = "POST",
     path    = concat {          config.path,

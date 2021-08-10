@@ -16,40 +16,26 @@ local fixtures = {
           listen ]=] .. OPENWHISK_PORT .. [=[ ssl;
 > if ssl_cert[1] then
 > for i = 1, #ssl_cert do
-        ssl_certificate     $(ssl_cert[i]);
-        ssl_certificate_key $(ssl_cert_key[i]);
+          ssl_certificate     $(ssl_cert[i]);
+          ssl_certificate_key $(ssl_cert_key[i]);
 > end
 > else
-        ssl_certificate ${{SSL_CERT}};
-        ssl_certificate_key ${{SSL_CERT_KEY}};
+          ssl_certificate ${{SSL_CERT}};
+          ssl_certificate_key ${{SSL_CERT_KEY}};
 > end
           ssl_protocols TLSv1.1 TLSv1.2 TLSv1.3;
-
           location ~ "]=] .. OPENWHISK_PATH .. [=[(.+)" {
               content_by_lua_block {
                 local function x()
                   ngx.req.read_body()
-                  local cjson = require("cjson")
-                  local body = cjson.decode(ngx.req.get_body_data())
-                  local content_type = body.headers["content-type"]
-                  local user_agent = body.headers["user-agent"]
-                  local content_length = body.headers["content-length"]
-                  local auth_token = body.headers["x-auth-token"]
-                  local extra_header = body.headers["extra-header"]
-                  local answer = [[{ 
-                    "status_code": 202,
-                    "body": "{\"payload\": \"Hello, World!\", \"path\": \"%s\", 
-                    \"content_type\": \"%s\", \"user_agent\": \"%s\", \"content_length\": \"%s\", 
-                    \"auth_token\": \"%s\", \"extra_header\": \"%s\"}",
-                    "headers": {"x": "v1", "y": "v2", "Content-type": "application/csv"}}]]
-                  answer = answer:format(body.path, content_type, user_agent, content_length, 
-                  auth_token, extra_header)
+                  local body = require("cjson").decode(ngx.req.get_body_data())
+                  local args, err = ngx.req.get_uri_args()
+                  local answer = [[{"payload": "Hello, %s, %s! blocking=%s, result=%s, timeout=%s"}]]
+                  answer = answer:format(body.name or "World", body._blocking, args["blocking"], args["result"], args["timeout"])
                   ngx.header["Content-Type"] = "application/json"
-                  ngx.header["request-body"] = body.body
                   ngx.header["Content-Length"] = #answer
-                  ngx.print(answer)
+                  ngx.say(answer)
                   return ngx.exit(200)
-
                 end
                 local ok, err = pcall(x)
                 if not ok then
@@ -61,7 +47,6 @@ local fixtures = {
     ]=]
   },
 }
-
 
 
 describe("Plugin: openwhisk", function()
@@ -85,7 +70,7 @@ describe("Plugin: openwhisk", function()
         service_token = SERVICE_TOKEN,
         action        = "hello",
         methods       = { "POST", "GET" },
-        raw_function  = true,
+        timeout       = 13000,
       }
     })
 
@@ -113,57 +98,37 @@ describe("Plugin: openwhisk", function()
     it("should allow POST", function()
       local res = assert(proxy:send {
         method  = "POST",
-        path    = "/prv/test/test1/extra?name=foo",
-        body    = {
-          test = "bar"
-        },
-        headers = {
-          ["Host"] = "test.com",
-          ["Content-Type"] = "application/json",
-          ["x-auth-token"] = "x_auth_token",
-          ["extra-header"] = "extra_header",
-        }
-      })
-
-      local body = assert.res_status(202, res)
-      local json = cjson.decode(body)
-      local headers = res.headers
-      assert.equal(headers["Server"], "kong/2.5.0")
-      assert.equal(headers["Via"], "kong/2.5.0")
-      assert.equal(headers["x"], "v1")
-      assert.equal(headers["y"], "v2")
-      assert.equal(headers["request-body"], nil)
-      assert.equal(headers["content-type"], "application/csv")
-      assert.equal(headers["content-length"], "291")
-      assert.equal(res.status, 202)
-      assert.equal("application/json", json.content_type)
-      assert.equal("lua-resty-http/0.14 (Lua) ngx_lua/10019", json.user_agent)
-      assert.equal("14", json.content_length)
-      assert.equal("x_auth_token", json.auth_token)
-      assert.equal("extra_header", json.extra_header)
-      assert.equal("/prv/test/test1/extra?name=foo", json.path)
-      assert.equal("Hello, World!", json.payload)
-    end)
-
-    it("should allow POST with querystring", function()
-      local res = assert(proxy:send {
-        method  = "POST",
-        path    = "/?name=foo",
+        path    = "/?_blocking=false&timeout=13000&result=false",
         body    = {},
         headers = {
           ["Host"] = "test.com"
         }
       })
 
-      local body = assert.res_status(202, res)
+      local body = assert.res_status(200, res)
       local json = cjson.decode(body)
-      assert.equal("Hello, World!", json.payload)
+      assert.equal("Hello, World, nil! blocking=false, result=true, timeout=13000", json.payload)
+    end)
+
+    it("should allow POST with querystring", function()
+      local res = assert(proxy:send {
+        method  = "POST",
+        path    = "/?name=foo&_blocking=false&timeout=13000&result=false",
+        body    = {},
+        headers = {
+          ["Host"] = "test.com"
+        }
+      })
+
+      local body = assert.res_status(200, res)
+      local json = cjson.decode(body)
+      assert.equal("Hello, foo, nil! blocking=false, result=true, timeout=13000", json.payload)
     end)
 
     it("should allow POST with json body", function()
       local res = assert(proxy:send {
         method  = "POST",
-        path    = "/",
+        path    = "/?_blocking=false&timeout=13000&result=false",
         body    = { name = "foo" },
         headers = {
           ["Host"]         = "test.com",
@@ -171,15 +136,15 @@ describe("Plugin: openwhisk", function()
         }
       })
 
-      local body = assert.res_status(202, res)
+      local body = assert.res_status(200, res)
       local json = cjson.decode(body)
-      assert.equal("Hello, World!", json.payload)
+      assert.equal("Hello, foo, nil! blocking=false, result=true, timeout=13000", json.payload)
     end)
 
     it("should allow POST with form-encoded body", function()
       local res = assert(proxy:send {
         method  = "POST",
-        path    = "/post",
+        path    = "/post?_blocking=false&timeout=13000&result=false",
         body    = {
           name  = "foo"
         },
@@ -189,9 +154,9 @@ describe("Plugin: openwhisk", function()
         },
 
       })
-      local body = assert.res_status(202, res)
+      local body = assert.res_status(200, res)
       local json = cjson.decode(body)
-      assert.equal("Hello, World!", json.payload)
+      assert.equal("Hello, foo, nil! blocking=false, result=true, timeout=13000", json.payload)
     end)
 
     it("should not allow GET", function()
@@ -204,9 +169,9 @@ describe("Plugin: openwhisk", function()
           ["Content-Type"] = "application/json"
         }
       })
-      local body = assert.res_status(202, res)
+      local body = assert.res_status(200, res)
       local json = cjson.decode(body)
-      assert.equal("Hello, World!", json.payload)
+      assert.equal("Hello, World, nil! blocking=true, result=true, timeout=13000", json.payload)
     end)
 
     it("should not allow DELETE", function()
