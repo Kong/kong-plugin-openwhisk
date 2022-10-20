@@ -1,4 +1,3 @@
-local BasePlugin    = require "kong.plugins.base_plugin"
 local constants     = require "kong.constants"
 local meta          = require "kong.meta"
 local http          = require "resty.http"
@@ -26,7 +25,7 @@ local server_header = meta._SERVER_TOKENS
 
 
 local function log(...)
-  ngx_log(ngx.ERR, "[openwhisk] ", ...)
+  return ngx_log(ngx.ERR, "[openwhisk] ", ...)
 end
 
 
@@ -85,19 +84,12 @@ local function flush(ctx)
 end
 
 
-local OpenWhisk = BasePlugin:extend()
-
-
+local OpenWhisk = {}
 OpenWhisk.PRIORITY = 1000
-
-
-function OpenWhisk:new()
-  OpenWhisk.super.new(self, "openwhisk")
-end
+OpenWhisk.VERSION = "1.0.0"
 
 
 function OpenWhisk:access(config)
-  OpenWhisk.super.access(self)
 
   -- only allow POST
   if var.request_method ~= "POST" then

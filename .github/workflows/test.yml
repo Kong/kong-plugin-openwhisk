@@ -1,0 +1,55 @@
+name: "Test"
+
+concurrency:
+  group: ${{ github.workflow }} ${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+on:
+  pull_request: {}
+  push:
+    branches:
+    - master
+  schedule:
+  - cron: '0 0 * * *'  # every day at midnight, to test against nightlies
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        kongVersion:
+        - "2.8.x"
+        - "3.0.x"
+        - "nightly"
+        - "2.8.1.x"
+        - "3.0.0.x"
+        - "nightly-ee"
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - uses: Kong/kong-license@master
+      # this step is only for Kong Inc internal uses, external users should
+      # use the 'license' parameter of the kong-pongo action.
+      with:
+        password: ${{ secrets.PULP_PASSWORD }}
+
+    - uses: Kong/kong-pongo-action@v1
+      with:
+        kong_version: ${{ matrix.kongVersion }}
+        # non-Kong-Inc users should uncomment the following line and provide
+        # the secret by that name if testing against Enterprise versions.
+        # Kong Inc users should use the `Kong/kong-license` action
+        license: ${{ secrets.KONG_LICENSE_DATA }}
+
+
+        # the following 3 entries are only for Kong Inc internal use to test against
+        # the private nighlty-ee image
+        enterprise_nightly_docker_username: ${{ secrets.GHA_DOCKERHUB_PULL_USER }}
+        enterprise_nightly_docker_password: ${{ secrets.GHA_KONG_ORG_DOCKERHUB_PUBLIC_TOKEN }}
+        # github token with permissions to clone the kong-ee repo
+        github_token: ${{ secrets.GHA_KONG_BOT_READ_TOKEN }}
+
+    - run: pongo run

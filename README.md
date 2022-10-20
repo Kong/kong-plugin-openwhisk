@@ -1,4 +1,5 @@
-[![Build Status](https://travis-ci.com/Kong/kong-plugin-openwhisk.svg?branch=master)](https://travis-ci.com/Kong/kong-plugin-openwhisk)
+[![Unix build](https://img.shields.io/github/workflow/status/Kong/kong-plugin-openwhisk/Test?label=Test&logo=linux)](https://github.com/Kong/kong-plugin-openwhisk/actions/workflows/test.yml)
+[![Luacheck](https://github.com/Kong/kong-plugin-openwhisk/workflows/Lint/badge.svg)](https://github.com/Kong/kong-plugin-openwhisk/actions/workflows/lint.yml)
 
 # Kong OpenWhisk Plugin
 
@@ -263,5 +264,3 @@ In the future, we will provide a more intuitive way to deal with similar use cas
 
 There is a known limitation in the system that prevents some response plugins
 from being executed. We are planning to remove this limitation in the future.
-
-[Back to TOC](#table-of-contents)
