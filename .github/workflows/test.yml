@@ -22,10 +22,11 @@ jobs:
         kongVersion:
         - "2.8.x"
         - "3.0.x"
-        - "nightly"
-        - "2.8.1.x"
+        - "stable"
+        - "dev"
         - "3.0.0.x"
-        - "nightly-ee"
+        - "stable-ee"
+        - "dev-ee"
 
     steps:
     - uses: actions/checkout@v3
