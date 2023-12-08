@@ -44,6 +44,7 @@ jobs:
         # the secret by that name if testing against Enterprise versions.
         # Kong Inc users should use the `Kong/kong-license` action
         license: ${{ secrets.KONG_LICENSE_DATA }}
+        op-token: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
 
 
         # the following 3 entries are only for Kong Inc internal use to test against
